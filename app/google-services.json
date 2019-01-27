@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "71667020820",
+    "firebase_url": "https://hackathon-project-e6a94.firebaseio.com",
+    "project_id": "hackathon-project-e6a94",
+    "storage_bucket": "hackathon-project-e6a94.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:71667020820:android:872d4bc2200f0728",
+        "android_client_info": {
+          "package_name": "fr.wildcodeschool.airbusproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "71667020820-anvetdhbvo0neqmomoqfudmn79isven6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "fr.wildcodeschool.airbusproject",
+            "certificate_hash": "31a718efe50acd2b6e466524175e72285d992532"
+          }
+        },
+        {
+          "client_id": "71667020820-4u8bpvth6k2rl91mqr414g8c3vsubtgd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "fr.wildcodeschool.airbusproject",
+            "certificate_hash": "a2f8f5a33d1f7a02e5318c39dfb725dd70093cb0"
+          }
+        },
+        {
+          "client_id": "71667020820-cfnbf5uqru0pluifsdg9l9den1fn2agi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBC7f9UaCdiG-Cl9y28x3fEFj-p07-OUfo"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "71667020820-cfnbf5uqru0pluifsdg9l9den1fn2agi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
