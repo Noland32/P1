@@ -6,7 +6,17 @@ public class User {
 
     private String id;
     private String username;
-    private Uri imageURL;
+    private String imageURL;
+
+    public User() {
+        //CONSTRUCTEUR VIDE
+    }
+
+    public User(String id, String username, String imageURL) {
+        this.id = id;
+        this.username = username;
+        this.imageURL = imageURL;
+    }
 
     public String getId() {
         return id;
@@ -24,11 +34,11 @@ public class User {
         this.username = username;
     }
 
-    public Uri getImageURL() {
+    public String getImageURL() {
         return imageURL;
     }
 
-    public void setImageURL(Uri imageURL) {
+    public void setImageURL(String imageURL) {
         this.imageURL = imageURL;
     }
 }

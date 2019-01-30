@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -25,12 +24,10 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -38,8 +35,6 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.rengwuxian.materialedittext.MaterialEditText;
 
-import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 
 import fr.wildcodeschool.airbusproject.Model.User;
@@ -48,26 +43,33 @@ public class RegisterActivity extends AppCompatActivity {
 
 
     private static final int REQUEST_PHOTO_FROM_GOOGLE_PHOTOS = 333;
+    private static final String GOOGLE_PHOTOS_PACKAGE_NAME = "com.google.android.apps.photos";
+    static int PReqCode = 1;
+    static int REQUESTCODE = 1;
     MaterialEditText username, email, password, confirm_password;
     Button btn_register;
     ImageButton add_btn;
-
-
-
     //FIREBASE
     FirebaseAuth auth;
     DatabaseReference reference;
-
+    String img_url;
     //UPLOAD IMAGE FIREBASE
     ImageView profile_image;
-    Uri pickedImgUri;
-    Uri downloadUri;
-    String save_URL;
-    static int PReqCode = 1;
-    static  int REQUESTCODE = 1;
-
+    Uri pickedImgUri; //path local
+    Uri downloadUri; // path storage image
     //progress bar
     private ProgressBar loadingProgress;
+
+    //TODO LIER UPLOAD DE LA PHOTO AU COMPTE
+
+    public static boolean isGooglePhotosInstalled(Context context) {
+        PackageManager packageManager = context.getPackageManager();
+        try {
+            return packageManager.getPackageInfo(GOOGLE_PHOTOS_PACKAGE_NAME, PackageManager.GET_ACTIVITIES) != null;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,7 +115,7 @@ public class RegisterActivity extends AppCompatActivity {
                 String txt_password = password.getText().toString();
                 String txt_confirm_pass = confirm_password.getText().toString();
 
-                if(TextUtils.isEmpty(txt_username) || TextUtils.isEmpty(txt_email) || TextUtils.isEmpty(txt_password) || TextUtils.isEmpty(txt_confirm_pass)) {
+                if (TextUtils.isEmpty(txt_username) || TextUtils.isEmpty(txt_email) || TextUtils.isEmpty(txt_password) || TextUtils.isEmpty(txt_confirm_pass)) {
                     Toast.makeText(RegisterActivity.this, "All fields are required", Toast.LENGTH_SHORT).show();
                     btn_register.setVisibility(View.VISIBLE);
                     loadingProgress.setVisibility(View.INVISIBLE);
@@ -128,17 +130,16 @@ public class RegisterActivity extends AppCompatActivity {
 
                 } else {
 
-                    register(txt_username, txt_email, txt_password, save_URL);
+                    register(txt_username, txt_email, txt_password);
                 }
 
             }
         });
     }
 
-    //CREATE USER ACCOUNT WITH EMAIL AND PASSWORD
-    //TODO LIER UPLOAD DE LA PHOTO AU COMPTE
+    //OPEN GALLERY FOR UPLOAD
 
-    private void register(final String username, String email, String password, final String saveURL) {
+    private void register(final String username, String email, String password) {
 
         auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
@@ -149,13 +150,15 @@ public class RegisterActivity extends AppCompatActivity {
                             final FirebaseUser firebaseUser = auth.getCurrentUser();
                             final String userid = firebaseUser.getUid();
 
-                            //PARTIE STORAGE ESSAI 2
-                            StorageReference mStorage = FirebaseStorage.getInstance().getReference("users_photo").child(userid);
-                            final StorageReference imageFilePath = mStorage.child(pickedImgUri.getLastPathSegment());
-                            /* UploadTask uploadTask = imageFilePath.putFile(pickedImgUri);
 
-                            //PERMET DE RECUPERER L'URL DU FICHIER UPLOAD
+                            // UPLOAD DANS STORAGE (pickedImgUrl = local path)
+                            // CREATION DOSSIER USERS PHOTO DANS REFERENCE QUI CONTIENT TOUS LES USERS CLASSES PAR USER ID
+                            StorageReference mStorage = FirebaseStorage.getInstance().getReference(userid);
+                            final StorageReference storageReference = mStorage.child(pickedImgUri.getLastPathSegment());
+                            //ENREGISTRE LE FILE QUI EST DESIGNE PAR URI LOCAL
+                            UploadTask uploadTask = storageReference.putFile(pickedImgUri);
 
+                            // TODO RECUPERATION DE L'URI DU STORAGE CIBLANT LE FILE
                             Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                                 @Override
                                 public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
@@ -164,7 +167,7 @@ public class RegisterActivity extends AppCompatActivity {
                                     }
 
                                     // Continue with the task to get the download URL
-                                    return imageFilePath.getDownloadUrl();
+                                    return storageReference.getDownloadUrl();
                                 }
                             }).addOnCompleteListener(new OnCompleteListener<Uri>() {
                                 @Override
@@ -172,29 +175,58 @@ public class RegisterActivity extends AppCompatActivity {
                                     if (task.isSuccessful()) {
                                         downloadUri = task.getResult();
                                         showMessage(downloadUri.toString());
-                                        save_URL = downloadUri.toString();
+                                        img_url = downloadUri.toString();
+                                        startActivity(new Intent(RegisterActivity.this, MainActivity.class));
+                                        showMessage("Your account have been created");
+
+                                        // TODO CALL DU USER MODEL POUR AFFICHAGE DANS LA DATABASE A METTRE ICI CAR ASYNCHRONE SI EN DEHORS VA L'EXECUTER AVANT
+                                        User user_model = new User(userid, username, img_url);
+                                        reference = FirebaseDatabase.getInstance().getReference("Users");
+                                        reference.push().setValue(user_model);
+                                        btn_register.setVisibility(View.VISIBLE);
+                                        loadingProgress.setVisibility(View.INVISIBLE);
+
 
                                     } else {
-                                        // Handle failures
-                                        // ...
+                                        showMessage("can't get download uri");
                                     }
-                                }
-                            }); */
-
-
-                            // ESSAI 3
-                            imageFilePath.putFile(pickedImgUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                                @Override
-                                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                                    FirebaseDatabase.getInstance().getReference("Users").child(userid).setValue(imageFilePath.getDownloadUrl().toString());
                                 }
                             });
 
 
+
+
+
+
+                            //PERMET DE RECUPERER L'URL DU FICHIER UPLOAD
+
+                            /*
+
+                            */
+
+                            /*
+
                             //PARTIE AUTHENTIFICATION DATABASE
 
                             assert firebaseUser != null;
-                            //String userid = firebaseUser.getUid();
+
+
+
+                            //ESSAIE NON HASHMAP
+                            User user_model = new User(userid, username, img_url);
+                            if (img_url != null) {
+                                User mUser = new User();
+                                mUser.setImageURL(img_url);
+                            }
+                            FirebaseDatabase database = FirebaseDatabase.getInstance();
+                            reference = database.getReference("Users");
+                            reference.push().setValue(user_model); */
+
+                            //TODO ENREGISTRER LA PHOTO DANS FIREBASE DATABASE
+
+                            /*
+
+                            //METHOD hashMap
                             reference = FirebaseDatabase.getInstance().getReference("Users").child(userid);
 
                             HashMap<String, String> hashMap = new HashMap<>();
@@ -218,16 +250,17 @@ public class RegisterActivity extends AppCompatActivity {
                             Toast.makeText(RegisterActivity.this, "You can't register with the email or password", Toast.LENGTH_SHORT).show();
                             btn_register.setVisibility(View.VISIBLE);
                             loadingProgress.setVisibility(View.INVISIBLE);
+                        } */
                         }
                     }
                 });
     }
 
     private void showMessage(String message) {
-        Toast.makeText(getApplicationContext(),message,Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
     }
 
-    //OPEN GALLERY FOR UPLOAD
+    //AFFICHE LA PHOTO CHOISI DANS PROFILE IMAGE GRACE AU REQUEST CODE + CREATION URI
 
     private void openGallery() {
         //Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -236,22 +269,21 @@ public class RegisterActivity extends AppCompatActivity {
         launchGooglePhotosPicker();
     }
 
+
+    //METHOD TO GET PICTURE FROM GOOGLE PHOTO
+
     private void checkAndRequestForPermission() {
         if (ContextCompat.checkSelfPermission(RegisterActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)
-        != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(RegisterActivity.this,Manifest.permission.READ_EXTERNAL_STORAGE)){
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(RegisterActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
                 showMessage("Please accept for required permission");
             } else {
-                ActivityCompat.requestPermissions(RegisterActivity.this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE},PReqCode);
+                ActivityCompat.requestPermissions(RegisterActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PReqCode);
             }
-        }
-        else {
+        } else {
             openGallery();
         }
     }
-
-    //AFFICHE LA PHOTO CHOISI DANS PROFILE IMAGE GRACE AU REQUEST CODE + CREATION URI
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -260,19 +292,6 @@ public class RegisterActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK && requestCode == REQUEST_PHOTO_FROM_GOOGLE_PHOTOS && data != null) {
             pickedImgUri = data.getData();
             profile_image.setImageURI(pickedImgUri);
-        }
-    }
-
-
-    //METHOD TO GET PICTURE FROM GOOGLE PHOTO
-
-    private static final String GOOGLE_PHOTOS_PACKAGE_NAME = "com.google.android.apps.photos";
-    public static boolean isGooglePhotosInstalled(Context context) {
-        PackageManager packageManager = context.getPackageManager();
-        try {
-            return packageManager.getPackageInfo(GOOGLE_PHOTOS_PACKAGE_NAME, PackageManager.GET_ACTIVITIES) != null;
-        } catch (PackageManager.NameNotFoundException e) {
-            return false;
         }
     }
 
