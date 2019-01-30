@@ -23,6 +23,7 @@ public class StartActivity extends AppCompatActivity {
         setContentView(R.layout.activity_start);
 
 
+        //TODO SIGNOUT A VIRER UNE FOIS LA REGISTER OK
         FirebaseAuth.getInstance().signOut();
 
         // CHECK IF USER IS NULL

@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     CircleImageView profile_img;
     TextView username;
 
+    FirebaseAuth firebaseAuth;
     FirebaseUser firebaseUser;
     DatabaseReference reference;
 
@@ -62,18 +63,16 @@ public class MainActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 User user = dataSnapshot.getValue(User.class);
                 username.setText(user.getUsername());
-                Glide.with(MainActivity.this)
-                        .load(user.getImageURL())
-                        .into(profile_img);
 
-                /* //TEST CONDITION SI PHOTO NULL >> DOIT FONCTIONNER SI REGISTER OK
-                if (user.getImageURL() != "defaut") {
+
+                 //TEST CONDITION SI PHOTO NULL >> DOIT FONCTIONNER SI REGISTER OK
+                if (!user.getImageURL().equals("defaut")) {
                     Glide.with(MainActivity.this)
                             .load(user.getImageURL())
                             .into(profile_img);
                 } else {
                     profile_img.setImageResource(R.drawable.ben);
-                } */
+                }
             }
 
             @Override
